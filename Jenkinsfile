@@ -47,7 +47,7 @@ pipeline {
                     echo 'Проверка базы данных...'
                     // Ищем контейнер БД по части имени
                     def dbContainerId = sh(
-                        script: "docker ps --filter 'name=.*${DB_SERVICE}.*' --format '{{.ID}}' | head -n 1",
+                        script: "docker ps --filter name=${SWARM_STACK_NAME}_${DB_SERVICE} --format '{{.ID}}'",
                         returnStdout: true
                     ).trim()
 
