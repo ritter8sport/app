@@ -38,7 +38,7 @@ pipeline {
             steps {
                 script {
                     echo 'Ожидание запуска сервисов...'
-                    sleep time: 30, unit: 'SECONDS'
+                    sleep time: 90, unit: 'SECONDS'
 
                     echo 'Проверка доступности backend...'
                     sh """
@@ -50,7 +50,7 @@ pipeline {
 
                     echo 'Поиск контейнера базы данных...'
                     def dbContainerId = sh(
-                        script: "docker ps --filter name=${SWARM_STACK_NAME}_${DB_SERVICE} --format '{{.ID}}'",
+                        script: "docker ps --filter name=${SWARM_STACK_NAME}_${DB_SERVICE} --format '{{.ID}}' | head -n 1",
                         returnStdout: true
                     ).trim()
 
