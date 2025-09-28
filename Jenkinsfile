@@ -34,7 +34,7 @@ pipeline {
             steps {
                 script {
                     echo 'Ожидание запуска сервисов...'
-                    sleep time: 60, unit: 'SECONDS'
+                    sleep time: 30, unit: 'SECONDS'
 
                     echo 'Проверка доступности backend...'
                     sh """
@@ -45,26 +45,15 @@ pipeline {
                     """
 
                     echo 'Проверка базы данных...'
-                    // Ищем контейнер по имени сервиса (более надежно)
                     def dbContainerId = sh(
-                        script: "docker ps --filter 'name=.*${DB_SERVICE}.*' --format '{{.ID}}' | head -n 1",
+                        script: "docker ps --filter name=${SWARM_STACK_NAME}_${DB_SERVICE} --format '{{.ID}}'",
                         returnStdout: true
                     ).trim()
-
-                    if (!dbContainerId) {
-                        // Альтернативный поиск
-                        dbContainerId = sh(
-                            script: "docker ps --filter 'label=com.docker.swarm.service.name=${SWARM_STACK_NAME}_${DB_SERVICE}' --format '{{.ID}}'",
-                            returnStdout: true
-                        ).trim()
-                    }
 
                     if (!dbContainerId) {
                         error("Контейнер базы данных не найден")
                     }
 
-                    echo "Найден контейнер БД: ${dbContainerId}"
-                    
                     sh """
                         docker exec ${dbContainerId} mysql -u${DB_USER} -p${DB_PASSWORD} -e 'USE ${DB_NAME}; SHOW TABLES;'
                     """
