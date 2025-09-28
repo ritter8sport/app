@@ -45,8 +45,9 @@ pipeline {
                     """
 
                     echo 'Проверка базы данных...'
+                    // Ищем контейнер БД по части имени
                     def dbContainerId = sh(
-                        script: "docker ps --filter name=${SWARM_STACK_NAME}_${DB_SERVICE} --format '{{.ID}}'",
+                        script: "docker ps --filter 'name=.*${DB_SERVICE}.*' --format '{{.ID}}' | head -n 1",
                         returnStdout: true
                     ).trim()
 
@@ -54,6 +55,8 @@ pipeline {
                         error("Контейнер базы данных не найден")
                     }
 
+                    echo "Найден контейнер БД: ${dbContainerId}"
+                    
                     sh """
                         docker exec ${dbContainerId} mysql -u${DB_USER} -p${DB_PASSWORD} -e 'USE ${DB_NAME}; SHOW TABLES;'
                     """
