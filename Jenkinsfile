@@ -25,14 +25,6 @@ pipeline {
                             docker swarm init || true
                         fi
                     '''
-                    // Удаляем stack и ждем завершения
-                    sh "docker stack rm ${SWARM_STACK_NAME} || true"
-                    sleep time: 15, unit: 'SECONDS'
-                    
-                    // Теперь том можно удалить
-                    sh "docker volume rm ${SWARM_STACK_NAME}_db_data || true"
-                    sleep time: 5, unit: 'SECONDS'
-                    
                     sh "docker stack deploy --with-registry-auth -c docker-compose.yml ${SWARM_STACK_NAME}"
                 }
             }
