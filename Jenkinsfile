@@ -27,7 +27,7 @@ pipeline {
                     '''
                     sh "docker stack rm ${SWARM_STACK_NAME} || true"
                     sh "docker volume rm ${SWARM_STACK_NAME}_db_data || true"
-                    sleep time: 10, unit: 'SECONDS'
+                    sleep time: 20, unit: 'SECONDS'
                     sh "docker stack deploy --with-registry-auth -c docker-compose.yml ${SWARM_STACK_NAME}"
                 }
             }
@@ -37,7 +37,7 @@ pipeline {
             steps {
                 script {
                     echo 'Ожидание запуска сервисов...'
-                    sleep time: 30, unit: 'SECONDS'
+                    sleep time: 60, unit: 'SECONDS'
 
                     echo 'Проверка доступности backend...'
                     sh """
