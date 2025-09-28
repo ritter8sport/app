@@ -5,13 +5,9 @@ pipeline {
         SWARM_STACK_NAME = 'app'
         FRONTEND_URL = 'http://192.168.0.10:8080'
         DB_SERVICE = 'db'
+        DB_USER = 'root'
+        DB_PASSWORD = 'root'
         DB_NAME = 'mydb'
-
-        ROOT_USER = 'root'
-        ROOT_PASSWORD = 'root'
-
-        APP_USER = 'user'
-        APP_PASSWORD = 'pass'
     }
 
     stages {
@@ -38,7 +34,7 @@ pipeline {
             steps {
                 script {
                     echo 'Ожидание запуска сервисов...'
-                    sleep time: 90, unit: 'SECONDS'
+                    sleep time: 30, unit: 'SECONDS'
 
                     echo 'Проверка доступности backend...'
                     sh """
@@ -48,9 +44,9 @@ pipeline {
                         fi
                     """
 
-                    echo 'Поиск контейнера базы данных...'
+                    echo 'Проверка базы данных...'
                     def dbContainerId = sh(
-                        script: "docker ps --filter name=${SWARM_STACK_NAME}_${DB_SERVICE} --format '{{.ID}}' | head -n 1",
+                        script: "docker ps --filter name=${SWARM_STACK_NAME}_${DB_SERVICE} --format '{{.ID}}'",
                         returnStdout: true
                     ).trim()
 
@@ -58,14 +54,8 @@ pipeline {
                         error("Контейнер базы данных не найден")
                     }
 
-                    echo 'Проверка базы через root...'
                     sh """
-                        docker exec ${dbContainerId} mysql -u${ROOT_USER} -p${ROOT_PASSWORD} -e 'USE ${DB_NAME}; SHOW TABLES;'
-                    """
-
-                    echo 'Проверка базы через прикладного пользователя...'
-                    sh """
-                        docker exec ${dbContainerId} mysql -u${APP_USER} -p${APP_PASSWORD} -e 'USE ${DB_NAME}; SHOW TABLES;'
+                        docker exec ${dbContainerId} mysql -u${DB_USER} -p${DB_PASSWORD} -e 'USE ${DB_NAME}; SHOW TABLES;'
                     """
                 }
             }
@@ -74,7 +64,7 @@ pipeline {
 
     post {
         success {
-            echo 'Деплой и тесты (оба пользователя) прошли успешно'
+            echo 'Деплой и тесты прошли успешно'
         }
         failure {
             echo 'Ошибка на одном из этапов'
