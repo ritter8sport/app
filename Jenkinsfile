@@ -25,9 +25,14 @@ pipeline {
                             docker swarm init || true
                         fi
                     '''
+                    // Удаляем stack и ждем завершения
                     sh "docker stack rm ${SWARM_STACK_NAME} || true"
+                    sleep time: 15, unit: 'SECONDS'
+                    
+                    // Теперь том можно удалить
                     sh "docker volume rm ${SWARM_STACK_NAME}_db_data || true"
-                    sleep time: 20, unit: 'SECONDS'
+                    sleep time: 5, unit: 'SECONDS'
+                    
                     sh "docker stack deploy --with-registry-auth -c docker-compose.yml ${SWARM_STACK_NAME}"
                 }
             }
@@ -48,15 +53,26 @@ pipeline {
                     """
 
                     echo 'Проверка базы данных...'
+                    // Ищем контейнер по имени сервиса (более надежно)
                     def dbContainerId = sh(
-                        script: "docker ps --filter name=${SWARM_STACK_NAME}_${DB_SERVICE} --format '{{.ID}}'",
+                        script: "docker ps --filter 'name=.*${DB_SERVICE}.*' --format '{{.ID}}' | head -n 1",
                         returnStdout: true
                     ).trim()
+
+                    if (!dbContainerId) {
+                        // Альтернативный поиск
+                        dbContainerId = sh(
+                            script: "docker ps --filter 'label=com.docker.swarm.service.name=${SWARM_STACK_NAME}_${DB_SERVICE}' --format '{{.ID}}'",
+                            returnStdout: true
+                        ).trim()
+                    }
 
                     if (!dbContainerId) {
                         error("Контейнер базы данных не найден")
                     }
 
+                    echo "Найден контейнер БД: ${dbContainerId}"
+                    
                     sh """
                         docker exec ${dbContainerId} mysql -u${DB_USER} -p${DB_PASSWORD} -e 'USE ${DB_NAME}; SHOW TABLES;'
                     """
