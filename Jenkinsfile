@@ -25,7 +25,7 @@ pipeline {
                             docker swarm init || true
                         fi
                     '''
-                    sh "docker stack deploy --with-registry-auth -c docker-compose.yaml ${SWARM_STACK_NAME}"
+                    sh "docker stack deploy --with-registry-auth -c docker-compose.yml ${SWARM_STACK_NAME}"
                 }
             }
         }
