@@ -4,7 +4,8 @@ pipeline {
     environment {
         SWARM_STACK_NAME = 'app'
         FRONTEND_URL = 'http://192.168.0.10:8080'
-        DB_SERVICE = 'db'
+        DB_HOST = '127.0.0.1'
+        DB_PORT = '3306'
         DB_USER = 'root'
         DB_PASSWORD = 'root'
         DB_NAME = 'mydb'
@@ -44,22 +45,10 @@ pipeline {
                         fi
                     """
 
-                    echo 'Поиск контейнера базы данных...'
-                    def dbContainerId = sh(
-                        script: "docker ps --filter name=${SWARM_STACK_NAME}_${DB_SERVICE} --format '{{.ID}}' | head -n 1",
-                        returnStdout: true
-                    ).trim()
-
-                    if (!dbContainerId) {
-                        echo "Контейнер базы данных не найден. Показываю логи сервиса:"
-                        sh "docker service ps ${SWARM_STACK_NAME}_${DB_SERVICE}"
-                        error("Ошибка: база данных не запустилась")
-                    }
-
-                    echo 'Проверка базы данных...'
+                    echo 'Проверка базы данных через сеть...'
                     sh """
-                        docker exec ${dbContainerId} \
-                        mysql -u${DB_USER} -p${DB_PASSWORD} -e 'USE ${DB_NAME}; SHOW TABLES;'
+                        mysql -h ${DB_HOST} -P ${DB_PORT} -u${DB_USER} -p${DB_PASSWORD} \
+                        -e 'USE ${DB_NAME}; SHOW TABLES;'
                     """
                 }
             }
