@@ -26,7 +26,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: mydb
       MYSQL_USER: user
-      MYSQL_PASSWORD: pass1
+      MYSQL_PASSWORD: pass
     volumes:
       - db_data:/var/lib/mysql
     deploy:
