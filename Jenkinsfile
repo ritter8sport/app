@@ -28,6 +28,8 @@ pipeline {
 		    sh "docker stack rm ${SWARM_STACK_NAME} || true"
 		    sh "docker volume rm ${SWARM_STACK_NAME}_db_data || true"
 		    sleep rime: 10, unit: 'SECONDS'
+                    
+                    
                     sh "docker stack deploy --with-registry-auth -c docker-compose.yml ${SWARM_STACK_NAME}"
                 }
             }
