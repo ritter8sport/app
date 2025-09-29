@@ -54,6 +54,21 @@ pipeline {
                         error("Контейнер базы данных не найден")
                     }
 
+                    echo "Найден контейнер БД: ${dbContainerId}"
+
+                    // ПРОВЕРКА ПОРТА MYSQL 3306
+                    echo 'Проверка что MySQL слушает порт 3306...'
+                    sh """
+                        if docker exec ${dbContainerId} netstat -tln | grep -q ':3306 '; then
+                            echo "MySQL слушает правильный порт: 3306"
+                        else
+                            echo "ОШИБКА: MySQL не слушает порт 3306"
+                            echo "Текущие порты:"
+                            docker exec ${dbContainerId} netstat -tln | grep LISTEN
+                            exit 1
+                        fi
+                    """
+
                     sh """
                         docker exec ${dbContainerId} mysql -u${DB_USER} -p${DB_PASSWORD} -e 'USE ${DB_NAME}; SHOW TABLES;'
                     """
