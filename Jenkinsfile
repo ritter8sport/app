@@ -8,6 +8,8 @@ pipeline {
         DB_USER = 'root'
         DB_PASSWORD = 'root'
         DB_NAME = 'mydb'
+        DB_HOST = 'db'
+        DB_PORT = '3306'
     }
 
     stages {
@@ -44,17 +46,15 @@ pipeline {
                         fi
                     """
 
-                    echo 'Проверка порта MySQL на хосте...'
+                    echo 'Проверка доступности порта базы данных...'
                     sh """
-                        if netstat -tln | grep -q ':3306 '; then
-                            echo "Порт 3306 слушает на хосте"
-                        else
-                            echo "ОШИБКА: порт 3306 не слушает"
+                        if ! nc -z ${DB_HOST} ${DB_PORT}; then
+                            echo 'База данных недоступна на порту ${DB_PORT}'
                             exit 1
                         fi
                     """
 
-                    echo 'Проверка БД через контейнер...'
+                    echo 'Проверка базы данных внутри контейнера...'
                     def dbContainerId = sh(
                         script: "docker ps --filter name=${SWARM_STACK_NAME}_${DB_SERVICE} --format '{{.ID}}' | head -n 1",
                         returnStdout: true
@@ -67,8 +67,6 @@ pipeline {
                     sh """
                         docker exec ${dbContainerId} mysql -u${DB_USER} -p${DB_PASSWORD} -e 'USE ${DB_NAME}; SHOW TABLES;'
                     """
-
-                    echo "Все проверки завершены успешно"
                 }
             }
         }
