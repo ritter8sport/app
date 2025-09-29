@@ -5,8 +5,8 @@ pipeline {
         SWARM_STACK_NAME = 'app'
         FRONTEND_URL = 'http://192.168.0.10:8080'
         DB_SERVICE = 'db'
-        DB_HOST = 'db'
-        DB_PORT = '3307'
+        DB_HOST = '192.168.0.10' 
+        DB_PORT = '3306'
         DB_USER = 'root'
         DB_PASSWORD = 'root'
         DB_NAME = 'mydb'
@@ -46,24 +46,35 @@ pipeline {
                         fi
                     """
 
-                    echo 'Проверка доступности порта базы данных...'
+                    echo 'Проверка доступности порта базы данных (с попытками)...'
                     sh """
-                        timeout 5 bash -c 'cat < /dev/null > /dev/tcp/${DB_HOST}/${DB_PORT}' || {
-                            echo 'База данных недоступна на порту ${DB_PORT}'
-                            exit 1
-                        }
+                        attempts=0
+                        max_attempts=12   # 12 * 5s = до 60 секунд ожидания
+                        until timeout 2 bash -c 'cat < /dev/null > /dev/tcp/${DB_HOST}/${DB_PORT}' ; do
+                            attempts=\$((attempts+1))
+                            echo "Попытка \$attempts/\$max_attempts: ${DB_HOST}:${DB_PORT} недоступен, ждём 5s..."
+                            if [ "\$attempts" -ge "\$max_attempts" ]; then
+                                echo "БД не доступна на ${DB_HOST}:${DB_PORT} после \$attempts попыток"
+                                exit 1
+                            fi
+                            sleep 5
+                        done
+                        echo "${DB_HOST}:${DB_PORT} доступен"
                     """
 
-                    echo 'Проверка базы данных внутри контейнера...'
+                    echo 'Поиск контейнера базы данных (локально на менеджере)...'
                     def dbContainerId = sh(
                         script: "docker ps --filter name=${SWARM_STACK_NAME}_${DB_SERVICE} --format '{{.ID}}' | head -n 1",
                         returnStdout: true
                     ).trim()
 
                     if (!dbContainerId) {
+                        echo "Контейнер базы данных не найден локально. Показываю статус сервиса:"
+                        sh "docker service ps ${SWARM_STACK_NAME}_${DB_SERVICE} || true"
                         error("Контейнер базы данных не найден")
                     }
 
+                    echo 'Проверка базы данных внутри контейнера...'
                     sh """
                         docker exec ${dbContainerId} mysql -u${DB_USER} -p${DB_PASSWORD} -e 'USE ${DB_NAME}; SHOW TABLES;'
                     """
