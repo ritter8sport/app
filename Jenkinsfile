@@ -6,7 +6,7 @@ pipeline {
         FRONTEND_URL = 'http://192.168.0.10:8080'
         DB_SERVICE = 'db'
         DB_HOST = 'db'
-        DB_PORT = '3306'
+        DB_PORT = '3307'
         DB_USER = 'root'
         DB_PASSWORD = 'root'
         DB_NAME = 'mydb'
