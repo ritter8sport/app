@@ -56,22 +56,29 @@ pipeline {
 
                     echo "Найден контейнер БД: ${dbContainerId}"
 
-                    // ПРОВЕРКА ПОРТА MYSQL 3306
+                    // ПРОВЕРКА ПОРТА
                     echo 'Проверка что MySQL слушает порт 3306...'
                     sh """
-                        if docker exec ${dbContainerId} netstat -tln | grep -q ':3306 '; then
+                        if docker exec ${dbContainerId} sh -c 'command -v ss >/dev/null && ss -tln | grep -q ":3306"'; then
+                            echo "MySQL слушает правильный порт: 3306"
+                        elif docker exec ${dbContainerId} sh -c 'command -v netstat >/dev/null && netstat -tln | grep -q ":3306"'; then
                             echo "MySQL слушает правильный порт: 3306"
                         else
-                            echo "ОШИБКА: MySQL не слушает порт 3306"
-                            echo "Текущие порты:"
-                            docker exec ${dbContainerId} netstat -tln | grep LISTEN
+                            echo "Проверяем процессы..."
+                            docker exec ${dbContainerId} sh -c 'ps aux | grep mysql'
+                            echo "Проверяем сокеты..."
+                            docker exec ${dbContainerId} sh -c 'ls -la /var/run/mysqld/ 2>/dev/null || echo "Директория mysqld не найдена"'
+                            echo "ОШИБКА: Не удалось подтвердить что MySQL слушает порт 3306"
                             exit 1
                         fi
                     """
 
+                    // Проверка подключения к БД
                     sh """
                         docker exec ${dbContainerId} mysql -u${DB_USER} -p${DB_PASSWORD} -e 'USE ${DB_NAME}; SHOW TABLES;'
                     """
+
+                    echo "Проверка БД завершена успешно"
                 }
             }
         }
