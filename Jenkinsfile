@@ -5,11 +5,11 @@ pipeline {
         SWARM_STACK_NAME = 'app'
         FRONTEND_URL = 'http://192.168.0.10:8080'
         DB_SERVICE = 'db'
+        DB_HOST = 'db'
+        DB_PORT = '3306'
         DB_USER = 'root'
         DB_PASSWORD = 'root'
         DB_NAME = 'mydb'
-        DB_HOST = 'db'
-        DB_PORT = '3306'
     }
 
     stages {
@@ -48,10 +48,10 @@ pipeline {
 
                     echo 'Проверка доступности порта базы данных...'
                     sh """
-                        if ! nc -z ${DB_HOST} ${DB_PORT}; then
+                        timeout 5 bash -c 'cat < /dev/null > /dev/tcp/${DB_HOST}/${DB_PORT}' || {
                             echo 'База данных недоступна на порту ${DB_PORT}'
                             exit 1
-                        fi
+                        }
                     """
 
                     echo 'Проверка базы данных внутри контейнера...'
